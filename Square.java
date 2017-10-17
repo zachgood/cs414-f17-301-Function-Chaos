@@ -2,6 +2,8 @@ package temp;
 
 public class Square {
 	private boolean wall;
+	private boolean whiteCastle;
+	private boolean blackCastle;
 	private int x;
 	private int y;
 	private Piece piece;
@@ -10,7 +12,25 @@ public class Square {
 		this.x = x;
 		this.y = y;
 		wall = false;
+		whiteCastle = false;
+		blackCastle = false;
 		piece = null;
+	}
+	
+	public void setWhiteCastle(){
+		whiteCastle = true;
+	}
+	
+	public void setBlackCastle(){
+		blackCastle = true;
+	}
+	
+	public boolean isWhiteCastle(){
+		return whiteCastle;
+	}
+	
+	public boolean isBlackCastle(){
+		return blackCastle;
 	}
 	
 	public Piece getPiece(){
@@ -37,34 +57,4 @@ public class Square {
 		return wall;
 	}
 	
-	public boolean move(Square dest){
-		if(piece == null)
-			return false;
-		
-		switch(piece.getType()){
-		case ROOK:
-			return moveRook(dest);
-			
-		case QUEEN:
-			return moveQueen(dest);
-			
-		case KING:
-			return moveKing(dest);
-			
-		default:
-			return false;
-		}		
-	}
-	
-	private boolean moveRook(Square dest){
-		return false;
-	}
-	
-	private boolean moveQueen(Square dest){
-		return false;
-	}
-	
-	private boolean moveKing(Square dest){
-		return false;
-	}
 }

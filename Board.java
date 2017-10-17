@@ -3,6 +3,8 @@ package temp;
 public class Board {
 	// 0,0 is the top left of the board
 	private Square[][] squares;
+	private Square blackKing;
+	private Square whiteKing;
 	
 	public Board(){
 		squares = new Square[12][12];
@@ -20,7 +22,39 @@ public class Board {
 	}
 	
 	private void initPieces(){
+		//black pieces
+		for(int i = 0; i < 3; i ++){
+			squares[2][7+i].setPiece(new Piece(PieceType.ROOK,false));
+			squares[2][7+i].setBlackCastle();
+		}
+		squares[3][7].setPiece(new Piece(PieceType.ROOK,false));
+		squares[3][7].setBlackCastle();
+		squares[3][8].setPiece(new Piece(PieceType.KING,false));
+		squares[3][8].setBlackCastle();
+		blackKing = squares[3][8];
+		squares[3][9].setPiece(new Piece(PieceType.ROOK,false));
+		squares[3][9].setBlackCastle();
+		for(int i = 0; i < 3; i ++){
+			squares[4][7+i].setPiece(new Piece(PieceType.ROOK,false));
+			squares[4][7+i].setBlackCastle();
+		}
 		
+		//white pieces
+		for(int i = 0; i < 3; i ++){
+			squares[7][2+i].setPiece(new Piece(PieceType.ROOK,true));
+			squares[7][2+i].setWhiteCastle();
+		}
+		squares[8][2].setPiece(new Piece(PieceType.ROOK,true));
+		squares[8][2].setWhiteCastle();
+		squares[8][3].setPiece(new Piece(PieceType.KING,true));
+		squares[8][3].setWhiteCastle();
+		whiteKing = squares[8][3];
+		squares[8][4].setPiece(new Piece(PieceType.ROOK,true));
+		squares[8][4].setWhiteCastle();
+		for(int i = 0; i < 3; i ++){
+			squares[9][2+i].setPiece(new Piece(PieceType.ROOK,true));
+			squares[9][2+i].setWhiteCastle();
+		}
 	}
 	
 	public Square getSquare(int x, int y){
@@ -30,37 +64,311 @@ public class Board {
 	private void setWalls(){
 		//black castle
 		//top wall
-		for(int i = 0; i < 3; i++)
+		for(int i = 0; i < 3; i++){
 			squares[1][7+i].makeWall();
+			squares[1][7+i].setBlackCastle();
+		}
 		
 		//left wall
-		for(int i = 0; i < 3; i++)
+		for(int i = 0; i < 3; i++){
 			squares[2+i][6].makeWall();
+			squares[2+i][6].setBlackCastle();
+		}
 		
 		//right wall
-		for(int i = 0; i < 3; i++)
+		for(int i = 0; i < 3; i++){
 			squares[2+i][10].makeWall();
+			squares[2+i][10].setBlackCastle();
+		}
 		
 		//bottom wall
-		for(int i = 0; i < 3; i++)
+		for(int i = 0; i < 3; i++){
 			squares[5][7+i].makeWall();
+			squares[5][7+i].setBlackCastle();
+		}
 		
 		
 		//white castle
 		//top wall
-		for(int i = 0; i < 3; i++)
+		for(int i = 0; i < 3; i++){
 			squares[6][2+i].makeWall();
+			squares[6][2+i].setWhiteCastle();
+		}
 		
 		//left wall
-		for(int i = 0; i < 3; i++)
+		for(int i = 0; i < 3; i++){
 			squares[7+i][1].makeWall();
+			squares[7+i][1].setWhiteCastle();
+		}
 		
 		//right wall
-		for(int i = 0; i < 3; i++)
+		for(int i = 0; i < 3; i++){
 			squares[7+i][5].makeWall();
+			squares[7+i][5].setWhiteCastle();
+		}
 		
 		//bottom wall
-		for(int i = 0; i < 3; i++)
+		for(int i = 0; i < 3; i++){
 			squares[10][2+i].makeWall();
+			squares[10][2+i].setWhiteCastle();
+		}
+	}
+	
+	//returns true if the move is valid and the piece is successfully moved
+	//returns false if the move is not valid. No pieces will be moved
+	public boolean move(Square src, Square dest){
+		Piece piece = src.getPiece();
+		
+		if(piece == null)
+			return false;
+		
+		switch(piece.getType()){
+		case ROOK:
+			return moveRook(src, dest);
+			
+		case QUEEN:
+			return moveQueen(src, dest);
+			
+		case KING:
+			return moveKing(src, dest);
+			
+		default:
+			return false;
+		}		
+	}
+	
+	private boolean moveRook(Square src, Square dest){
+		if(validRookMove(src,dest)){
+			dest.setPiece(src.getPiece());
+			src.setPiece(null);
+			promote(dest);
+			return true;
+		}else
+			return false;
+	}
+	
+	private void promote(Square square){
+		Piece piece = square.getPiece();
+		if(piece.isWhite() && square.isBlackCastle() && !square.isWall())
+			piece.promote();
+		else if(!piece.isWhite() && square.isWhiteCastle() && !square.isWall())
+			piece.promote();
+	}
+	
+	private boolean validRookMove(Square src, Square dest){
+		if(src.getX() == dest.getX() && src.getY() == dest.getY())
+			return false;
+		
+		//check that dest is a valid square to move to
+		int xDiff = Math.abs(src.getX() - dest.getX());
+		int yDiff = Math.abs(src.getY() - dest.getY());
+		if((xDiff == 0 && yDiff > 0) || (xDiff > 0 && yDiff == 0)){
+			if(unobstructed(src,dest)){
+				return checkRookCapture(src,dest);
+			}
+		}
+		
+		return false;
+	}
+	
+	private boolean checkRookCapture(Square src, Square dest){
+		if(dest.getPiece() == null)
+			return true;
+		if(src.getPiece().isWhite() == dest.getPiece().isWhite())
+			return false;
+		
+		//check if rook is on enemy castle wall and enemy piece is inside its own castle
+		if(src.isWall()){
+			if(src.getPiece().isWhite() && src.isBlackCastle()){
+				if(dest.isBlackCastle() && !dest.isWall())
+					return true;
+			}else if(!src.getPiece().isWhite() && src.isWhiteCastle()){
+				if(dest.isWhiteCastle() && !dest.isWall())
+					return true;
+			}			
+		}
+		
+		//check if rook is in its own castle and enemy is on castle wall
+		if(src.isBlackCastle() && !src.getPiece().isWhite()){
+			if(dest.isBlackCastle() && dest.isWall())
+				return true;
+		}else if(src.isWhiteCastle() && src.getPiece().isWhite()){
+			if(dest.isWhiteCastle() && dest.isWall())
+				return true;
+		}
+		
+		return false;
+	}
+	
+	private boolean unobstructed(Square src, Square dest){
+		int xDiff = src.getX() - dest.getX();
+		int yDiff = src.getY() - dest.getY();
+		if(xDiff != 0 && yDiff == 0){//horizontal move
+			int i;
+			if(xDiff > 0)
+				i = src.getX() - 1;
+			else
+				i = src.getX() + 1;
+			while(i != dest.getX()){
+				if(squares[src.getY()][i].getPiece() != null)
+					return false;
+				
+				if(xDiff > 0)
+					i--;
+				else
+					i++;
+			}
+			return true;
+		}else if(xDiff == 0 && yDiff != 0){//vertical move
+			int i;
+			if(yDiff > 0)
+				i = src.getY() -1;
+			else
+				i = src.getY()+1;
+			while(i != dest.getY()){
+				if(squares[i][src.getX()].getPiece() != null)
+					return false;
+				
+				if(yDiff > 0)
+					i--;
+				else
+					i++;
+			}
+			return true;
+		}else{//diagonal move			
+			return unobstructedDiagonal(src, dest, xDiff, yDiff);
+		}
+	}
+	
+	private boolean unobstructedDiagonal(Square src, Square dest, int xDiff, int yDiff){
+		//up and right
+		if(xDiff < 0 && yDiff > 0){
+			int x = src.getX() + 1;
+			int y = src.getY() - 1;
+			while(x != dest.getX()){
+				if(squares[y][x].getPiece() != null)
+					return false;
+				x++;
+				y--;
+			}
+			return true;
+		}
+		
+		//up and left
+		else if(xDiff > 0 && yDiff > 0){
+			int x = src.getX() - 1;
+			int y = src.getY() - 1;
+			while(x != dest.getX()){
+				if(squares[y][x].getPiece() != null)
+					return false;
+				x--;
+				y--;
+			}
+			return true;
+		}
+		
+		//down and left
+		else if(xDiff > 0 && yDiff < 0){
+			int x = src.getX() - 1;
+			int y = src.getY() + 1;
+			while(x != dest.getX()){
+				if(squares[y][x].getPiece() != null)
+					return false;
+				x--;
+				y++;
+			}
+			return true;
+		}
+		
+		//down and right
+		else if(xDiff < 0 && yDiff < 0){
+			int x = src.getX() + 1;
+			int y = src.getY() + 1;
+			while(x != dest.getX()){
+				if(squares[y][x].getPiece() != null)
+					return false;
+				x++;
+				y++;
+			}
+			return true;
+		}else{//shouldn't really ever get here
+			return false;
+		}
+	}
+	
+	private boolean moveQueen(Square src, Square dest){
+		if(validQueenMove(src,dest)){
+			dest.setPiece(src.getPiece());
+			src.setPiece(null);
+			return true;
+		}
+		
+		return false;
+	}
+	
+	private boolean validQueenMove(Square src, Square dest){
+		if(validRookMove(src,dest))
+			return true;
+		
+		int xDiff = Math.abs(src.getX() - dest.getX());
+		int yDiff = Math.abs(src.getY() - dest.getY());
+		if(xDiff == yDiff){
+			if(unobstructed(src, dest))
+				return checkRookCapture(src, dest);
+		}
+		
+		return false;
+	}
+	
+	private boolean moveKing(Square src, Square dest){
+		if(validKingMove(src,dest)){
+			dest.setPiece(src.getPiece());
+			src.setPiece(null);
+			if(dest.getPiece().isWhite())
+				whiteKing = dest;
+			else
+				blackKing = dest;
+			return true;
+		}else
+			return false;
+	}
+	
+	private boolean validKingMove(Square src, Square dest){
+		if(src.getX() == dest.getX() && src.getY() == dest.getY())
+			return false;
+		
+		//check destination square is within castle
+		if(src.equals(whiteKing)){
+			if(!(dest.isWhiteCastle() && !dest.isWall()))
+				return false;
+		}else if(src.equals(blackKing)){
+			if(!(dest.isBlackCastle() && !dest.isWall()))
+				return false;
+		}else
+			return false;
+		
+		//check if it's a valid 1 square move
+		int xDiff = Math.abs(src.getX() - dest.getX());
+		int yDiff = Math.abs(src.getY() - dest.getY());
+		if(xDiff <= 1 && yDiff <= 1){
+			return checkKingCapture(src, dest);
+		}
+		
+		//check if it's a valid knight-type move
+		if((xDiff == 2 && yDiff == 1) || (xDiff == 1 && yDiff == 2)){
+			return checkKingCapture(src,dest);
+		}
+		
+		return false;
+	}
+	
+	private boolean checkKingCapture(Square src, Square dest){
+		if(dest.getPiece() == null)
+			return true;
+		
+		if(dest.getPiece().isWhite() == src.getPiece().isWhite())
+			return false;
+		else
+			return true;
 	}
 }
