@@ -1,14 +1,26 @@
 package temp;
 
 public class Board {
-	// 0,0 is the top left of the board
+	// 0,0 is the top left of the board, 11,0 is bottom left, 0,11 is top right, 11,11 is bottom right
 	private Square[][] squares;
 	private Square blackKing;
 	private Square whiteKing;
+	private boolean whiteCheck;
+	private boolean blackCheck;
 	
 	public Board(){
 		squares = new Square[12][12];
+		whiteCheck = false;
+		blackCheck = false;
 		initialize();
+	}
+	
+	public Square getWhiteKing(){
+		return whiteKing;
+	}
+	
+	public Square getBlackKing(){
+		return blackKing;
 	}
 	
 	private void initialize(){
@@ -57,7 +69,7 @@ public class Board {
 		}
 	}
 	
-	public Square getSquare(int x, int y){
+	public Square getSquare(int y, int x){
 		return squares[y][x];
 	}
 	
@@ -137,14 +149,50 @@ public class Board {
 		}		
 	}
 	
+	public boolean move(int srcY, int srcX, int destY, int destX){
+		return move(squares[srcY][srcX], squares[destY][destX]);
+	}
+	
+	private boolean isValidMove(Square src, Square dest){
+		Piece piece = src.getPiece();
+		if(piece == null)
+			return false;
+		
+		switch(piece.getType()){
+		case ROOK:
+			return validRookMove(src, dest);
+			
+		case QUEEN:
+			return validQueenMove(src, dest);
+			
+		case KING:
+			return validKingMove(src, dest);
+			
+		default:
+			return false;
+		}
+	}
+	
 	private boolean moveRook(Square src, Square dest){
 		if(validRookMove(src,dest)){
 			dest.setPiece(src.getPiece());
 			src.setPiece(null);
 			promote(dest);
+			testIfMoveCausedCheck(dest);				
 			return true;
 		}else
 			return false;
+	}
+	
+	private void testIfMoveCausedCheck(Square dest){
+		if(dest.getPiece().isWhite()){
+			if(isValidMove(dest,blackKing)){
+				blackCheck = true;
+			}
+		}else{
+			if(isValidMove(dest,whiteKing))
+				whiteCheck = true;
+		}
 	}
 	
 	private void promote(Square square){
@@ -171,30 +219,34 @@ public class Board {
 		return false;
 	}
 	
+	//assumes unobstructed() has already been checked and returned true!
 	private boolean checkRookCapture(Square src, Square dest){
 		if(dest.getPiece() == null)
 			return true;
 		if(src.getPiece().isWhite() == dest.getPiece().isWhite())
 			return false;
 		
-		//check if rook is on enemy castle wall and enemy piece is inside its own castle
-		if(src.isWall()){
-			if(src.getPiece().isWhite() && src.isBlackCastle()){
-				if(dest.isBlackCastle() && !dest.isWall())
+		if (dest.getPiece().getType() != PieceType.KING) {
+			//check if rook is on enemy castle wall and enemy piece is inside its own castle
+			if (src.isWall()) {
+				if (src.getPiece().isWhite() && src.isBlackCastle()) {
+					if (dest.isBlackCastle() && !dest.isWall())
+						return true;
+				} else if (!src.getPiece().isWhite() && src.isWhiteCastle()) {
+					if (dest.isWhiteCastle() && !dest.isWall())
+						return true;
+				}
+			}
+			//check if rook is in its own castle and enemy is on castle wall
+			if (src.isBlackCastle() && !src.getPiece().isWhite()) {
+				if (dest.isBlackCastle() && dest.isWall())
 					return true;
-			}else if(!src.getPiece().isWhite() && src.isWhiteCastle()){
-				if(dest.isWhiteCastle() && !dest.isWall())
+			} else if (src.isWhiteCastle() && src.getPiece().isWhite()) {
+				if (dest.isWhiteCastle() && dest.isWall())
 					return true;
-			}			
-		}
-		
-		//check if rook is in its own castle and enemy is on castle wall
-		if(src.isBlackCastle() && !src.getPiece().isWhite()){
-			if(dest.isBlackCastle() && dest.isWall())
-				return true;
-		}else if(src.isWhiteCastle() && src.getPiece().isWhite()){
-			if(dest.isWhiteCastle() && dest.isWall())
-				return true;
+			} 
+		}else{//dest is enemy king. This move will never actually happen, just used for check and checkmate
+			return true;
 		}
 		
 		return false;
@@ -300,6 +352,7 @@ public class Board {
 		if(validQueenMove(src,dest)){
 			dest.setPiece(src.getPiece());
 			src.setPiece(null);
+			testIfMoveCausedCheck(dest);
 			return true;
 		}
 		
@@ -370,5 +423,136 @@ public class Board {
 			return false;
 		else
 			return true;
+	}
+	
+	private boolean inCheck(Square king){
+		if(king.getPiece().getType() != PieceType.KING)
+			return false;
+		
+		if(inHorizontalCheck(king))
+			return true;
+		
+		if(inVerticalCheck(king))
+			return true;
+		
+		return inDiagonalCheck(king);
+	}
+	
+	private boolean inDiagonalCheck(Square king){
+		Piece piece;
+		int x = king.getX()+1;
+		int y = king.getY()-1;
+		//check up and right
+		while(x < 12 && y >= 0){
+			piece = squares[y][x].getPiece();
+			if(piece != null){
+				if(piece.isWhite() == king.getPiece().isWhite())
+					break;
+				else
+					return true;
+			}
+			x++;
+			y--;
+		}
+		
+		//check up and left
+		x = king.getX()-1;
+		y = king.getY()-1;
+		while(x >= 0 && y >= 0){
+			piece = squares[y][x].getPiece();
+			if(piece != null){
+				if(piece.isWhite() == king.getPiece().isWhite())
+					break;
+				else
+					return true;
+			}
+			x--; y--;
+		}
+		
+		//check down and left
+		x = king.getX()-1;
+		y = king.getY()+1;
+		while(x >= 0 && y < 12){
+			piece = squares[y][x].getPiece();
+			if(piece != null){
+				if(piece.isWhite() == king.getPiece().isWhite())
+					break;
+				else
+					return true;
+			}
+			x--; y++;
+		}
+		
+		//check down and right
+		x = king.getX()+1;
+		y = king.getY()+1;
+		while(x < 12 && y < 12){
+			piece = squares[y][x].getPiece();
+			if(piece != null){
+				if(piece.isWhite() == king.getPiece().isWhite())
+					break;
+				else
+					return true;
+			}
+			x++; y++;
+		}
+		
+		return false;
+	}
+	
+	private boolean inVerticalCheck(Square king){
+		int x = king.getX();
+		Piece piece;
+		//check up
+		for(int i = king.getY()-1; i >= 0; i--){
+			piece = squares[i][x].getPiece();
+			if(piece != null){
+				if(piece.isWhite() == king.getPiece().isWhite())
+					break;
+				else
+					return true;
+			}
+		}
+		
+		//check down
+		for(int i = king.getY()+1; i < 12; i++){
+			piece = squares[i][x].getPiece();
+			if(piece != null){
+				if(piece.isWhite() == king.getPiece().isWhite())
+					break;
+				else
+					return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	private boolean inHorizontalCheck(Square king){
+		Square[] row = squares[king.getY()];
+		Piece piece;
+		//check to the left
+		for(int i = king.getX()-1; i >= 0; i--){
+			piece = row[i].getPiece();
+			if(piece != null){
+				if(piece.isWhite() == king.getPiece().isWhite())
+					break;
+				else
+					return true;
+			}
+		}
+		
+		//check to the right
+		for(int i = king.getX()+1; i < 12; i++){
+			piece = row[i].getPiece();
+			if(piece != null){
+				if(piece.isWhite() == king.getPiece().isWhite())
+					break;
+				else
+					return true;
+			}
+		}
+		
+		return false;
 	}
 }
