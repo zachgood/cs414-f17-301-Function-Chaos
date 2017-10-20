@@ -7,11 +7,13 @@ public class Board {
 	private Square whiteKing;
 	private boolean whiteCheck;
 	private boolean blackCheck;
+	private String winner;
 	
 	public Board(){
 		squares = new Square[12][12];
 		whiteCheck = false;
 		blackCheck = false;
+		winner = null;
 		initialize();
 	}
 	
@@ -23,10 +25,14 @@ public class Board {
 		return blackKing;
 	}
 	
+	public String getWinner(){
+		return winner;
+	}
+	
 	private void initialize(){
 		for(int y = 0; y < 12; y++){
 			for(int x = 0; x < 12; x++){
-				squares[x][y] = new Square(x,y);
+				squares[y][x] = new Square(y,x);
 			}
 		}
 		setWalls();
@@ -130,27 +136,105 @@ public class Board {
 	//returns false if the move is not valid. No pieces will be moved
 	public boolean move(Square src, Square dest){
 		Piece piece = src.getPiece();
+		boolean capKing = false;
+		if(dest.getPiece() != null && dest.getPiece().getType() == PieceType.KING)
+			capKing = true;
+		boolean result = false;
 		
 		if(piece == null)
 			return false;
 		
 		switch(piece.getType()){
 		case ROOK:
-			return moveRook(src, dest);
+			result = moveRook(src, dest);
+			break;
 			
 		case QUEEN:
-			return moveQueen(src, dest);
+			result = moveQueen(src, dest);
+			break;
 			
 		case KING:
-			return moveKing(src, dest);
-			
-		default:
-			return false;
-		}		
+			result = moveKing(src, dest);
+		}
+		
+//		if(result){
+//			checkMate(dest.getPiece().isWhite());
+//		}
+		
+		if(result && capKing){
+			declareWinner(dest.getPiece().isWhite());
+		}
+		return result;
 	}
 	
 	public boolean move(int srcY, int srcX, int destY, int destX){
 		return move(squares[srcY][srcX], squares[destY][destX]);
+	}
+	
+	//true parameter means to test the checkmate status of black. False means test white
+	private void checkMate(boolean testBlack){
+		if((testBlack && blackCheck) || (!testBlack && whiteCheck)){		
+			Square king;
+			if(testBlack)
+				king = blackKing;
+			else
+				king = whiteKing;
+			
+			boolean hCheck = inHorizontalCheck(king);
+			boolean vCheck = inVerticalCheck(king);
+			boolean dCheck = inDiagonalCheck(king);
+			
+			if(canMoveKingOutOfCheck(king))
+				return;
+			int checkNum = 0;
+			if(hCheck) checkNum++;
+			if(vCheck) checkNum++;
+			if(dCheck) checkNum++;
+			
+			//can only block one piece with a single move. So if you can't move the king
+			//and you're in check multiple ways, that's a guarenteed checkmate
+			if(checkNum > 1){
+				declareWinner(testBlack);
+				return;
+			}
+			
+			if(hCheck){
+				
+			}
+		}
+	}
+	
+	private boolean canBlockHorizontal(Square king){
+		boolean white = king.getPiece().isWhite();
+		return false;
+	}
+	
+	private boolean canMoveKingOutOfCheck(Square king){
+		boolean white = king.getPiece().isWhite();
+		if(white){
+			for(int y = 7; y < 10; y++){
+				for(int x = 2; x < 5; x++){
+					if(validKingMove(king, squares[y][x]))
+						return true;
+				}
+			}
+			return false;
+		}else{
+			for(int y = 2; y < 5; y++){
+				for(int x = 7; x < 10; x++){
+					if(validKingMove(king,squares[y][x]))
+						return true;
+				}
+			}
+			return false;
+		}
+	}
+	
+	private void declareWinner(boolean whiteWins){
+		if(whiteWins)
+			winner = "White";
+		else
+			winner = "Black";
 	}
 	
 	private boolean isValidMove(Square src, Square dest){
@@ -178,7 +262,7 @@ public class Board {
 			dest.setPiece(src.getPiece());
 			src.setPiece(null);
 			promote(dest);
-			testIfMoveCausedCheck(dest);				
+			//testIfMoveCausedCheck(dest);				
 			return true;
 		}else
 			return false;
@@ -213,6 +297,7 @@ public class Board {
 		if((xDiff == 0 && yDiff > 0) || (xDiff > 0 && yDiff == 0)){
 			if(unobstructed(src,dest)){
 				return checkRookCapture(src,dest);
+					//return checkCheck(src,dest);
 			}
 		}
 		
@@ -352,7 +437,7 @@ public class Board {
 		if(validQueenMove(src,dest)){
 			dest.setPiece(src.getPiece());
 			src.setPiece(null);
-			testIfMoveCausedCheck(dest);
+			//testIfMoveCausedCheck(dest);
 			return true;
 		}
 		
@@ -368,6 +453,7 @@ public class Board {
 		if(xDiff == yDiff){
 			if(unobstructed(src, dest))
 				return checkRookCapture(src, dest);
+					//return checkCheck(src,dest);
 		}
 		
 		return false;
@@ -405,14 +491,54 @@ public class Board {
 		int yDiff = Math.abs(src.getY() - dest.getY());
 		if(xDiff <= 1 && yDiff <= 1){
 			return checkKingCapture(src, dest);
+				//return checkCheck(src,dest);
 		}
 		
 		//check if it's a valid knight-type move
 		if((xDiff == 2 && yDiff == 1) || (xDiff == 1 && yDiff == 2)){
 			return checkKingCapture(src,dest);
+				//return checkCheck(src,dest);
 		}
 		
 		return false;
+	}
+	
+	//if you are in check, the only valid moves are those that result in leaving check
+	//also can't put yourself in check
+	private boolean checkCheck(Square src, Square dest){
+	boolean white = src.getPiece().isWhite();
+		//save current state, try the move and see if the king's in check
+		Square oSrc = new Square(src);
+		Square oDest = new Square(dest);
+		Square oKing = null;
+		if(src.getPiece().getType() == PieceType.KING){
+			if(white){
+				oKing = new Square(whiteKing);
+				whiteKing = dest;				
+			}
+			else{
+				oKing = new Square(blackKing);
+				blackKing = dest;
+			}
+		}
+		dest.setPiece(src.getPiece());
+		src.setPiece(null);
+		promote(dest);		
+		boolean result;
+		if((white && inCheck(whiteKing)) || (!white && inCheck(blackKing))){
+			result = false;
+		}else result = true;
+		
+		//restore previous state and return result
+		src.copy(oSrc);
+		dest.copy(oDest);
+		if(oKing != null){
+			if(white)
+				whiteKing.copy(oKing);
+			else
+				blackKing.copy(oKing);
+		}
+		return result;
 	}
 	
 	private boolean checkKingCapture(Square src, Square dest){

@@ -9,6 +9,11 @@ public class Piece {
 		this.white = white;
 	}
 	
+	public Piece(Piece p){
+		white = p.white;
+		type = p.type;
+	}
+	
 	public boolean isWhite(){
 		return white;
 	}

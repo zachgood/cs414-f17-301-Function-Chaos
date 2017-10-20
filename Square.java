@@ -8,13 +8,36 @@ public class Square {
 	private int y;
 	private Piece piece;
 	
-	public Square(int x, int y){
+	public Square(int y, int x){
 		this.x = x;
 		this.y = y;
 		wall = false;
 		whiteCastle = false;
 		blackCastle = false;
 		piece = null;
+	}
+	
+	public Square(Square s){
+		x = s.x;
+		y = s.y;
+		wall = s.wall;
+		whiteCastle = s.whiteCastle;
+		blackCastle = s.blackCastle;
+		if(s.piece != null)
+			piece = s.piece;
+		else
+			piece = null;
+	}
+	
+	//turns this square into a copy of the parameter square
+	//essentially the same as copy constructor without new allocation
+	public void copy(Square s){
+		x = s.x;
+		y = s.y;
+		wall = s.wall;
+		whiteCastle = s.whiteCastle;
+		blackCastle = s.blackCastle;
+		piece = s.piece;
 	}
 	
 	public void setWhiteCastle(){
