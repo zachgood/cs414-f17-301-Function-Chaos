@@ -7,6 +7,8 @@ import java.awt.event.*;
 import java.applet.*;
 import java.util.Vector;
 
+import javax.swing.JFrame;
+
 /*
    This applet lets two users play chad against each other.
    White always starts the game. When a player can make no more
@@ -18,7 +20,7 @@ import java.util.Vector;
 
 
 //public class ChadApp extends Applet {
-public class ChadGameApp extends Applet {
+public class ChadGameApp extends JFrame {
 
    /* The main applet class only lays out the applet.  The work of
       the game is all done in the ChadCanvas object.   Note that
@@ -26,7 +28,9 @@ public class ChadGameApp extends Applet {
       instance variables in the ChadCanvas class.  The applet
       class gives them their visual appearance and sets their
       size and positions.*/
-
+	public ChadGameApp() {
+		init();
+	}
 	public void init() {
 		// Set void to do layout myself.
 		setLayout(null);
@@ -67,6 +71,7 @@ public class ChadGameApp extends Applet {
 		board.resignButton.setBounds(310, 120, 100, 30);
 		board.otherButton.setBounds(420, 80, 150, 50);
 		board.message.setBounds(0, 300, 330, 30);
+		this.show();
 	}
    
 } 
