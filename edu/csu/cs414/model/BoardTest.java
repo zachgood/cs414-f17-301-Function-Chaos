@@ -362,6 +362,60 @@ public class BoardTest {
 		assertEquals(s1, board.getBlackKing());
 		
 		//test knight-type move
+		assertTrue(board.move(4,8,6,8));
+		assertTrue(board.move(2,7,4,8));
+	}
+	
+	@Test
+	public void testRookCheck(){
+		assertTrue(board.move(8,4,8,7));
+		assertTrue(board.move(4,8,5,8));
+		assertTrue(board.move(7,4,6,4));
+		assertTrue(board.move(5,8,5,7));
+		assertTrue(board.move(8,7,8,8));
+		assertEquals("Black",board.getCheck());
+	}
+	
+	@Test
+	public void testQueenCheck(){
+		assertTrue(board.move(8,4,8,7));
+		assertTrue(board.move(8,7,5,7));
+		assertTrue(board.move(5,7,4,7));
+		assertEquals("Black",board.getCheck());
+	}
+	
+	@Test
+	public void testPutSelfInCheckRook(){
+		assertTrue(board.move(8,4,8,5));
+		assertTrue(board.move(4,8,8,8));
+		assertFalse(board.move(8,5,7,5));
+	}
+	
+	@Test
+	public void testPutSelfInCheckKing(){
+		assertTrue(board.move(7,4,6,4));
+		assertTrue(board.move(4,8,7,8));
+		assertFalse(board.move(8,3,7,4));
+	}
+	
+	@Test
+	public void testMustLeaveCheck(){
+		assertTrue(board.move(4,8,5,8));
+		assertTrue(board.move(5,8,5,7));
+		assertTrue(board.move(8,4,8,8));
+		assertEquals("Black",board.getCheck());
+		assertFalse(board.move(2,8,1,8));
+		assertFalse(board.move(3,8,4,8));
+		assertTrue(board.move(4,9,4,8));
+	}
+
+	@Test
+	public void testCheckmate(){
+		assertTrue(board.move(8,4,8,8));
+		assertTrue(board.move(8,8,5,8));
+		assertTrue(board.move(9,4,9,8));
+		assertTrue(board.move(5,8,4,8));
+		assertEquals("White",board.getWinner());
 	}
 
 }

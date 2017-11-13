@@ -24,7 +24,7 @@ public class Square {
 		whiteCastle = s.whiteCastle;
 		blackCastle = s.blackCastle;
 		if(s.piece != null)
-			piece = s.piece;
+			piece = new Piece(s.piece);
 		else
 			piece = null;
 	}
@@ -37,7 +37,10 @@ public class Square {
 		wall = s.wall;
 		whiteCastle = s.whiteCastle;
 		blackCastle = s.blackCastle;
-		piece = s.piece;
+		if(s.piece != null)
+			piece = new Piece(s.piece);
+		else
+			piece = null;
 	}
 	
 	public void setWhiteCastle(){

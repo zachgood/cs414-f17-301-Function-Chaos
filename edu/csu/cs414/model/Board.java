@@ -6,7 +6,9 @@ public class Board {
 	private Square blackKing;
 	private Square whiteKing;
 	private boolean whiteCheck;
+	private int whiteDiagonalCheckDirection; //0: up&left  1: up&right  2: down&left  3: down&right
 	private boolean blackCheck;
+	private int blackDiagonalCheckDirection;
 	private String winner;
 	
 	public Board(){
@@ -27,6 +29,17 @@ public class Board {
 	
 	public String getWinner(){
 		return winner;
+	}
+	
+	public String getCheck(){
+		if(blackCheck && whiteCheck)
+			return "Black and White";
+		else if(whiteCheck)
+			return "White";
+		else if(blackCheck)
+			return "Black";
+		else
+			return "";
 	}
 	
 	private void initialize(){
@@ -136,9 +149,9 @@ public class Board {
 	//returns false if the move is not valid. No pieces will be moved
 	public boolean move(Square src, Square dest){
 		Piece piece = src.getPiece();
-		boolean capKing = false;
-		if(dest.getPiece() != null && dest.getPiece().getType() == PieceType.KING)
-			capKing = true;
+//		boolean capKing = false;
+//		if(dest.getPiece() != null && dest.getPiece().getType() == PieceType.KING)
+//			capKing = true;
 		boolean result = false;
 		
 		if(piece == null)
@@ -157,13 +170,17 @@ public class Board {
 			result = moveKing(src, dest);
 		}
 		
-//		if(result){
-//			checkMate(dest.getPiece().isWhite());
-//		}
-		
-		if(result && capKing){
-			declareWinner(dest.getPiece().isWhite());
+		if(result){
+			checkMate(dest.getPiece().isWhite());
+			if(piece.isWhite())
+				whiteCheck = false;
+			else
+				blackCheck = false;
 		}
+		
+//		if(result && capKing){
+//			declareWinner(dest.getPiece().isWhite());
+//		}
 		return result;
 	}
 	
@@ -178,19 +195,15 @@ public class Board {
 			if(testBlack)
 				king = blackKing;
 			else
-				king = whiteKing;
-			
-			boolean hCheck = inHorizontalCheck(king);
-			boolean vCheck = inVerticalCheck(king);
-			boolean dCheck = inDiagonalCheck(king);
+				king = whiteKing;					
 			
 			if(canMoveKingOutOfCheck(king))
 				return;
-			int checkNum = 0;
-			if(hCheck) checkNum++;
-			if(vCheck) checkNum++;
-			if(dCheck) checkNum++;
 			
+			int hCheck = inHorizontalCheck(king);
+			int vCheck = inVerticalCheck(king);
+			int dCheck = inDiagonalCheck(king);			
+			int checkNum = Math.abs(hCheck) + Math.abs(vCheck) + dCheck;
 			//can only block one piece with a single move. So if you can't move the king
 			//and you're in check multiple ways, that's a guarenteed checkmate
 			if(checkNum > 1){
@@ -198,14 +211,248 @@ public class Board {
 				return;
 			}
 			
-			if(hCheck){
-				
-			}
+			if(hCheck != 0){
+				if(canBlockHorizontal(king,hCheck))
+					return;
+			}else if(vCheck != 0){
+				if(canBlockVertical(king,vCheck))
+					return;
+			}else if(canBlockDiagonal(king))
+				return;
+			
+			declareWinner(testBlack);			
 		}
 	}
 	
-	private boolean canBlockHorizontal(Square king){
+	private boolean canBlockDiagonal(Square king){
 		boolean white = king.getPiece().isWhite();
+		int direction;
+		if(white) direction = whiteDiagonalCheckDirection;
+		else direction = blackDiagonalCheckDirection;
+		int xDir, yDir;
+		switch(direction){
+			case 0:
+			xDir = yDir = -1;
+			break;
+
+			case 1:
+			yDir = -1;
+			xDir = 1;
+			break;
+
+			case 2:
+			yDir = 1;
+			xDir = -1;
+			break;
+
+			case 3:
+			xDir = yDir = 1;
+			break;
+			
+			default:
+				xDir = yDir = 0;
+		}
+		for(int y = king.getY()+yDir, x = king.getX()+xDir; y>=0 && y<12 && x>=0 && x<12; y+=yDir, x+=xDir){
+			Piece piece = squares[y][x].getPiece();
+			if(piece == null){
+				if(checkBlock(king,squares[y][x]))
+					return true;
+			} else break;
+		}
+		
+		return false;
+	}
+
+	private boolean checkBlock(Square king, Square square){
+		boolean white = king.getPiece().isWhite();
+		int x,y;
+		//check left
+		for(x = square.getX()-1, y = square.getY(); x>=0; x--){
+			Piece piece = squares[y][x].getPiece();
+			if(piece == null) continue;
+			if(piece.isWhite() != white) break;
+			if(isValidMove(squares[y][x],square))
+				return true;
+		}
+		//check right
+		for(x = square.getX()+1; x<12; x++){
+			Piece piece = squares[y][x].getPiece();
+			if(piece == null) continue;
+			if(piece.isWhite() != white) break;
+			if(isValidMove(squares[y][x],square))
+				return true;
+		}
+		//check up
+		for(x = square.getX(), y = square.getY()-1; y>=0; y--){
+			Piece piece = squares[y][x].getPiece();
+			if(piece == null) continue;
+			if(piece.isWhite() != white) break;
+			if(isValidMove(squares[y][x],square))
+				return true;
+		}
+		//check down
+		for(y = square.getY()+1; y<12; y++){
+			Piece piece = squares[y][x].getPiece();
+			if(piece == null) continue;
+			if(piece.isWhite() != white) break;
+			if(isValidMove(squares[y][x],square))
+				return true;
+		}
+		//check up/left
+		for(x = square.getX()-1, y = square.getY()-1; x>=0 && y>=0; x--,y--){
+			Piece piece = squares[y][x].getPiece();
+			if(piece == null) continue;
+			if(piece.isWhite() != white || piece.getType() == PieceType.KING)
+				break;
+			if(isValidMove(squares[y][x],square))
+				return true;
+		}
+		//check up/right
+		for(x = square.getX()+1, y = square.getY()-1; x<12 && y>=0; x++,y--){
+			Piece piece = squares[y][x].getPiece();
+			if(piece == null) continue;
+			if(piece.isWhite() != white || piece.getType() == PieceType.KING)
+				break;
+			if(isValidMove(squares[y][x],square))
+				return true;
+		}
+		//check down/left
+		for(x = square.getX()-1, y = square.getY()+1; x>=0 && y<12; x--,y++){
+			Piece piece = squares[y][x].getPiece();
+			if(piece == null) continue;
+			if(piece.isWhite() != white || piece.getType() == PieceType.KING)
+				break;
+			if(isValidMove(squares[y][x],square))
+				return true;
+		}
+		//check down/right
+		for(x = square.getX()+1, y = square.getY()+1; x<12 && y<12; x++,y++){
+			Piece piece = squares[y][x].getPiece();
+			if(piece == null) continue;
+			if(piece.isWhite() != white || piece.getType() == PieceType.KING)
+				break;
+			if(isValidMove(squares[y][x],square))
+				return true;
+		}
+
+		return false;
+	}
+	
+	private boolean canBlockVertical(Square king, int direction){
+		boolean white = king.getPiece().isWhite();
+		for(int y = king.getY() + direction; y < 12 && y >= 0; y += direction){
+			Piece piece = squares[y][king.getX()].getPiece();
+			if(piece == null){
+				//check left
+				for(int x = king.getX()-1; x >= 0; x--){
+					piece = squares[y][x].getPiece();
+					if(piece == null) continue;
+					if(piece.isWhite() != white) break;
+					if(isValidMove(squares[y][x],squares[y][king.getX()]))
+						return true;
+				}
+				//check right
+				for(int x = king.getX()+1; x < 12; x++){
+					piece = squares[y][x].getPiece();
+					if(piece == null) continue;
+					if(piece.isWhite() != white) break;
+					if(isValidMove(squares[y][x],squares[y][king.getX()]))
+						return true;
+				}
+				//check up&left
+				for(int x=king.getX()-1,y2=y-1; x>=0 && y>=0; x--,y--){
+					piece = squares[y2][x].getPiece();
+					if(piece == null) continue;
+					if(piece.isWhite() != white) break;
+					if(isValidMove(squares[y2][x],squares[y][king.getX()]))
+						return true;
+				}
+				//check up&right
+				for(int x=king.getX()+1, y2=y-1; x<12 && y>=0; x++,y--){
+					piece = squares[y2][x].getPiece();
+					if(piece == null) continue;
+					if(piece.isWhite() != white) break;
+					if(isValidMove(squares[y2][x],squares[y][king.getX()]))
+						return true;
+				}
+				//check down&right
+				for(int x=king.getX()+1, y2=y+1; x<12 && y<12; x++,y++){
+					piece = squares[y2][x].getPiece();
+					if(piece == null) continue;
+					if(piece.isWhite() != white) break;
+					if(isValidMove(squares[y2][x],squares[y][king.getX()]))
+						return true;
+				}
+				//check down&left
+				for(int x=king.getX()-1, y2=y+1; x>=0 && y<12; x--,y++){
+					piece = squares[y2][x].getPiece();
+					if(piece == null) continue;
+					if(piece.isWhite() != white) break;
+					if(isValidMove(squares[y2][x],squares[y][king.getX()]))
+						return true;
+				}
+			}else break;
+		}
+		
+		return false;
+	}
+	
+	private boolean canBlockHorizontal(Square king,int direction){
+		boolean white = king.getPiece().isWhite();
+		for(int x = king.getX() + direction; x < 12 && x >= 0; x += direction){
+			Piece piece = squares[king.getY()][x].getPiece();
+			if(piece == null){
+				//check up
+				for(int y = king.getY() - 1; y >= 0; y--){
+					piece = squares[y][x].getPiece();
+					if(piece == null) continue;
+					if(piece.isWhite() != white) break;
+					if(isValidMove(squares[y][x], squares[king.getY()][x]))
+						return true;
+				}
+				//check down
+				for(int y = king.getY()+1; y < 12; y++){
+					piece = squares[y][x].getPiece();
+					if(piece == null) continue;
+					if(piece.isWhite() != white) break;
+					if(isValidMove(squares[y][x],squares[king.getY()][x]))
+						return true;
+				}
+				//check up&left
+				for(int y=king.getY()-1,x2=x-1; y>=0 && x2>=0; y--,x--){
+					piece = squares[y][x2].getPiece();
+					if(piece == null) continue;
+					if(piece.isWhite() != white) break;
+					if(isValidMove(squares[y][x2],squares[king.getY()][x]))
+						return true;
+				}
+				//check up&right
+				for(int y=king.getY()-1,x2=x+1; y>=0 && x2<12; y--,x++){
+					piece = squares[y][x2].getPiece();
+					if(piece == null) continue;
+					if(piece.isWhite() != white) break;
+					if(isValidMove(squares[y][x2],squares[king.getY()][x]))
+						return true;
+				}
+				//check down&right
+				for(int y=king.getY()+1,x2=x+1; y<12 && x2<12; y++,x++){
+					piece = squares[y][x2].getPiece();
+					if(piece == null) continue;
+					if(piece.isWhite() != white) break;
+					if(isValidMove(squares[y][x2],squares[king.getY()][x]))
+						return true;
+				}
+				//check down&left
+				for(int y=king.getY()+1,x2=x-1; y<12 && x>=0;y++,x--){
+					piece = squares[y][x2].getPiece();
+					if(piece == null) continue;
+					if(piece.isWhite() != white) break;
+					if(isValidMove(squares[y][x2],squares[king.getY()][x]))
+						return true;
+				}
+			}else break;
+		}
+		
 		return false;
 	}
 	
@@ -262,7 +509,7 @@ public class Board {
 			dest.setPiece(src.getPiece());
 			src.setPiece(null);
 			promote(dest);
-			//testIfMoveCausedCheck(dest);				
+			testIfMoveCausedCheck(dest);				
 			return true;
 		}else
 			return false;
@@ -296,8 +543,8 @@ public class Board {
 		int yDiff = Math.abs(src.getY() - dest.getY());
 		if((xDiff == 0 && yDiff > 0) || (xDiff > 0 && yDiff == 0)){
 			if(unobstructed(src,dest)){
-				return checkRookCapture(src,dest);
-					//return checkCheck(src,dest);
+				if(checkRookCapture(src,dest))
+					return checkCheck(src,dest);
 			}
 		}
 		
@@ -437,7 +684,7 @@ public class Board {
 		if(validQueenMove(src,dest)){
 			dest.setPiece(src.getPiece());
 			src.setPiece(null);
-			//testIfMoveCausedCheck(dest);
+			testIfMoveCausedCheck(dest);
 			return true;
 		}
 		
@@ -452,8 +699,8 @@ public class Board {
 		int yDiff = Math.abs(src.getY() - dest.getY());
 		if(xDiff == yDiff){
 			if(unobstructed(src, dest))
-				return checkRookCapture(src, dest);
-					//return checkCheck(src,dest);
+				if(checkRookCapture(src, dest))
+					return checkCheck(src,dest);
 		}
 		
 		return false;
@@ -490,14 +737,14 @@ public class Board {
 		int xDiff = Math.abs(src.getX() - dest.getX());
 		int yDiff = Math.abs(src.getY() - dest.getY());
 		if(xDiff <= 1 && yDiff <= 1){
-			return checkKingCapture(src, dest);
-				//return checkCheck(src,dest);
+			if(checkKingCapture(src, dest))
+				return checkCheck(src,dest);
 		}
 		
 		//check if it's a valid knight-type move
 		if((xDiff == 2 && yDiff == 1) || (xDiff == 1 && yDiff == 2)){
-			return checkKingCapture(src,dest);
-				//return checkCheck(src,dest);
+			if(checkKingCapture(src,dest))
+				return checkCheck(src,dest);
 		}
 		
 		return false;
@@ -534,9 +781,9 @@ public class Board {
 		dest.copy(oDest);
 		if(oKing != null){
 			if(white)
-				whiteKing.copy(oKing);
+				whiteKing = src;
 			else
-				blackKing.copy(oKing);
+				blackKing = src;
 		}
 		return result;
 	}
@@ -555,27 +802,34 @@ public class Board {
 		if(king.getPiece().getType() != PieceType.KING)
 			return false;
 		
-		if(inHorizontalCheck(king))
+		if(inHorizontalCheck(king) > 0)
 			return true;
 		
-		if(inVerticalCheck(king))
+		if(inVerticalCheck(king) > 0)
 			return true;
 		
-		return inDiagonalCheck(king);
+		return inDiagonalCheck(king) > 0;
 	}
 	
-	private boolean inDiagonalCheck(Square king){
+	//return value does not tell direction of check, only total number of instances of diagonal check
+	private int inDiagonalCheck(Square king){
 		Piece piece;
+		int result = 0;
 		int x = king.getX()+1;
 		int y = king.getY()-1;
 		//check up and right
 		while(x < 12 && y >= 0){
 			piece = squares[y][x].getPiece();
 			if(piece != null){
-				if(piece.isWhite() == king.getPiece().isWhite())
+				if(piece.isWhite() == king.getPiece().isWhite() || piece.getType() != PieceType.QUEEN)
 					break;
-				else
-					return true;
+				else{
+					result++;
+					if(king.getPiece().isWhite())
+						whiteDiagonalCheckDirection = 1;
+					else
+						blackDiagonalCheckDirection = 1;
+				}
 			}
 			x++;
 			y--;
@@ -587,10 +841,15 @@ public class Board {
 		while(x >= 0 && y >= 0){
 			piece = squares[y][x].getPiece();
 			if(piece != null){
-				if(piece.isWhite() == king.getPiece().isWhite())
+				if(piece.isWhite() == king.getPiece().isWhite() || piece.getType() != PieceType.QUEEN)
 					break;
-				else
-					return true;
+				else{
+					result++;
+					if(king.getPiece().isWhite())
+						whiteDiagonalCheckDirection = 0;
+					else
+						blackDiagonalCheckDirection = 0;
+				}
 			}
 			x--; y--;
 		}
@@ -601,10 +860,15 @@ public class Board {
 		while(x >= 0 && y < 12){
 			piece = squares[y][x].getPiece();
 			if(piece != null){
-				if(piece.isWhite() == king.getPiece().isWhite())
+				if(piece.isWhite() == king.getPiece().isWhite() || piece.getType() != PieceType.QUEEN)
 					break;
-				else
-					return true;
+				else{
+					result++;
+					if(king.getPiece().isWhite())
+						whiteDiagonalCheckDirection = 3;
+					else
+						blackDiagonalCheckDirection = 3;
+				}
 			}
 			x--; y++;
 		}
@@ -615,20 +879,31 @@ public class Board {
 		while(x < 12 && y < 12){
 			piece = squares[y][x].getPiece();
 			if(piece != null){
-				if(piece.isWhite() == king.getPiece().isWhite())
+				if(piece.isWhite() == king.getPiece().isWhite() || piece.getType() != PieceType.QUEEN)
 					break;
-				else
-					return true;
+				else{
+					result++;
+					if(king.getPiece().isWhite())
+						whiteDiagonalCheckDirection = 4;
+					else
+						blackDiagonalCheckDirection = 4;
+				}
 			}
 			x++; y++;
 		}
 		
-		return false;
+		return result;
 	}
 	
-	private boolean inVerticalCheck(Square king){
+	//return values
+	//0: not in vertical check
+	//-1: in check from above
+	//1: in check from below
+	//2: in check from above and below
+	private int inVerticalCheck(Square king){
 		int x = king.getX();
 		Piece piece;
+		int result = 0;
 		//check up
 		for(int i = king.getY()-1; i >= 0; i--){
 			piece = squares[i][x].getPiece();
@@ -636,7 +911,7 @@ public class Board {
 				if(piece.isWhite() == king.getPiece().isWhite())
 					break;
 				else
-					return true;
+					result = -1;
 			}
 		}
 		
@@ -646,17 +921,25 @@ public class Board {
 			if(piece != null){
 				if(piece.isWhite() == king.getPiece().isWhite())
 					break;
+				else if(result == 0)
+					result = 1;
 				else
-					return true;
+					result = 2;
 			}
 		}
 		
-		return false;
+		return result;
 	}
 	
-	private boolean inHorizontalCheck(Square king){
+	//return values
+	//0: not in horizontal check
+	//-1: in horizontal check to the left
+	//1: in horizontal check to the right
+	//2: in horizontal check on both sides
+	private int inHorizontalCheck(Square king){
 		Square[] row = squares[king.getY()];
 		Piece piece;
+		int result = 0;
 		//check to the left
 		for(int i = king.getX()-1; i >= 0; i--){
 			piece = row[i].getPiece();
@@ -664,7 +947,7 @@ public class Board {
 				if(piece.isWhite() == king.getPiece().isWhite())
 					break;
 				else
-					return true;
+					result = -1;
 			}
 		}
 		
@@ -674,11 +957,13 @@ public class Board {
 			if(piece != null){
 				if(piece.isWhite() == king.getPiece().isWhite())
 					break;
+				else if(result == 0)
+					result = 1;
 				else
-					return true;
+					result = 2;
 			}
 		}
 		
-		return false;
+		return result;
 	}
 }
