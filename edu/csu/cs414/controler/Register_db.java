@@ -12,7 +12,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
-import edu.csu.cs414.model.Register;
+import edu.csu.cs414.view.Register;
 
 public class Register_db extends ConnectionMySQL implements ActionListener{
 	

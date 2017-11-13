@@ -4,30 +4,33 @@ import edu.csu.cs414.view.*;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.applet.*;
 import java.util.Vector;
 
 import javax.swing.JFrame;
-
-/*
-   This applet lets two users play chad against each other.
-   White always starts the game. When a player can make no more
-   moves, the game ends.
-   
-   This file defines four classes: the main applet class, GamePlay;
-   ChadCanvas, ChadMove, and ChadData.
-*/
+import javax.swing.JOptionPane;
+import javax.swing.JButton;
 
 
-//public class ChadApp extends Applet {
 public class ChadGameApp extends JFrame {
 
-   /* The main applet class only lays out the applet.  The work of
-      the game is all done in the ChadCanvas object.   Note that
-      the Buttons and Label used in the applet are defined as 
-      instance variables in the ChadCanvas class.  The applet
-      class gives them their visual appearance and sets their
-      size and positions.*/
+	private boolean isBlack = true; 
+    private ChadCanvas b = new ChadCanvas();  
+    private boolean isWin = false;  
+    private boolean isStart = false;    
+    private boolean isYourTurn = false; 
+ 
+    private DataInputStream din = null;
+    private DataOutputStream dout = null;
+	
+	
+  
 	public ChadGameApp() {
 		getContentPane().setBackground(SystemColor.textHighlight);
 		init();
@@ -39,17 +42,11 @@ public class ChadGameApp extends JFrame {
 		// Set a dark green background.
 		setBackground(new Color(0, 150, 0)); 
 
-		/* Create the components and add them to the applet. */
-		// Create a checkers canvas to visualize the game and the buttons,
-		// messages, and other stuff needed
-		// Note: The constructor creates the buttons board.resignButton and
-		// board.newGameButton and the Label board.message.
+		
 		ChadCanvas board = new ChadCanvas();
 		getContentPane().add(board);
 
-		// Add buttons, messages, and stuff to the board so it knows what to
-		// include in the window
-		// New game button
+		
 		board.newGameButton.setBackground(Color.lightGray);
 		getContentPane().add(board.newGameButton);
 		// Resign button
@@ -73,7 +70,85 @@ public class ChadGameApp extends JFrame {
 		board.resignButton.setBounds(310, 120, 100, 30);
 		board.otherButton.setBounds(420, 80, 150, 50);
 		board.message.setBounds(0, 300, 330, 30);
+		
+		new Thread(new Runnable() {
+			 
+            public void run() {
+                while (true) {  
+                	while (isStart && !isYourTurn) {
+                        try {
+                            
+                            int fromRow = din.readInt();
+							int fromCol = din.readInt();
+							int toRow = din.readInt();
+							int toCol = din.readInt();
+							b.doMakeMove(fromRow, fromCol, toRow, toCol);  
+                            repaint();
+                            
+                           
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }).start();
+		
+		
+		JButton button = new JButton("Create");
+		button.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				new Thread(new Runnable() {
+					 
+	                @Override
+	                public void run() {
+	                    try {
+	                        ServerSocket server = new ServerSocket(5566);
+	                        while(true){
+	                        	Socket client = server.accept();
+	                        
+	                        din = new DataInputStream(client.getInputStream());
+	                        dout = new DataOutputStream(client.getOutputStream());
+	                        isStart = true;
+	                        isYourTurn = true;
+	                        
+	                        }
+	                    } catch (IOException e) {
+	                        e.printStackTrace();
+	                    }
+	                }
+	            }).start();
+				
+				
+			}
+		});
+		button.setBounds(341, 287, 101, 52);
+		getContentPane().add(button);
+		
+		JButton button_1 = new JButton("join");
+		button_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String ip = JOptionPane.showInputDialog(this, "please input your ID: ");
+	            if(ip != null && !ip.equals("")) {
+	                try {
+	                    Socket client = new Socket("192.0.0.1", 5566);
+	                    din = new DataInputStream(client.getInputStream());
+	                    dout = new DataOutputStream(client.getOutputStream());
+	                    isStart = true;
+	                    isYourTurn = false;
+	                    
+	                } catch (Exception ex) {
+	                    ex.printStackTrace();
+	                }
+	                repaint();
+	                button.setEnabled(false);
+	                
+	            }
+				
+			}
+		});
+		button_1.setBounds(473, 287, 101, 52);
+		getContentPane().add(button_1);
 		this.show();
 	}
-   
 } 

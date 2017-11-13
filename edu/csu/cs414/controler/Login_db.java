@@ -9,8 +9,8 @@ import java.sql.Statement;
 
 import javax.swing.*;
 
-import edu.csu.cs414.model.Register;
-import edu.csu.cs414.model.StartGame;  
+import edu.csu.cs414.view.Register;
+import edu.csu.cs414.view.StartGame;  
 
 public class Login_db extends ConnectionMySQL implements ActionListener {
 
@@ -35,6 +35,13 @@ public class Login_db extends ConnectionMySQL implements ActionListener {
         Register = b2;  
     }
 
+	public String getcurrentuser(){
+		String currentuser= "Martin";
+		currentuser= name.getText();
+		return currentuser;
+	}
+	
+	
 	
 	public void actionPerformed(ActionEvent e) {
 		// TODO Auto-generated method stub
@@ -85,7 +92,7 @@ public class Login_db extends ConnectionMySQL implements ActionListener {
             		new JFrame().dispose();  
             		re1 = new StartGame(); 
             		return true;  
-            		  
+            		
             	}          
             }
 			return false;  
