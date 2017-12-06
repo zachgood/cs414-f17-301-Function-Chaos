@@ -1,4 +1,4 @@
-package edu.csu.cs414.model;
+package edu.csu.cs414.view;
 
 
 import java.awt.BorderLayout;
@@ -13,51 +13,44 @@ import java.awt.SystemColor;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.SQLException ;
 import java.sql.Statement;
-import java.sql.PreparedStatement ;  
-import java.text.SimpleDateFormat ;  
 
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
 
-import edu.csu.cs414.controler.Register_db;  
+import edu.csu.cs414.controler.Register_db;
+import javax.swing.border.LineBorder;
+import java.awt.Color;
+import java.awt.ComponentOrientation;  
 
-public class Profile extends JFrame{  
+public class History extends JFrame{  
 	
-		
+	public static String user_name2=null;	
 	private JPanel pan = new JPanel();
-	private JLabel namelab = new JLabel("UserName");
-	private JLabel passlab = new JLabel("Password");
-	private JLabel emaillab = new JLabel("email");
 	public JButton Submit = new JButton("Sumbit");
-	public static String user_name1="Martin";
 	
    	Register_db regist;
-   	private final JTextField username = new JTextField();
-   	private final JTextField password = new JTextField();
-   	private final JTextField email = new JTextField();
-   	
-   	
-   	static Connection ct = null;  
-    static PreparedStatement ps = null;  
-    static ResultSet rs = null;  
-   	String name1 = user_name1;
-    String password1 = null;
-    String email1 =null;
+   	private JTable table;
+   	private JTextField textField;
+   	private JTextField textField_1;
+   	private JTextField textField_2;
+   	private String name1 = user_name2;
+    private String wincount1 = "0";
+    private String losecount = "0";
     
     
-	public Profile() {
+   	
+	public History() {
 		
 		try {
 		      Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/chadgame","root","123456");
 		      System.out.println("Success connect Mysql server!");
 		      Statement stmt = connect.createStatement();
-		      ResultSet rs = stmt.executeQuery("select * from player where UserName=\""+name1+"\"");	
+		      ResultSet rs = stmt.executeQuery("select * from game where UserName=\""+name1+"\"");	
 		      while (rs.next()) {
-		    	  password1 = rs.getString(4);  
-		          email1 = rs.getString(3);  
-		          System.out.println(rs.getString("UserName") + password1);
+		    	  wincount1 = rs.getString(2);  
+		    	  losecount = rs.getString(3);  
+		          System.out.println(rs.getString("UserName") + wincount1 + losecount);
 		      }
 		}
 		catch (Exception e) {
@@ -65,17 +58,7 @@ public class Profile extends JFrame{
 		      e.printStackTrace();
 		}
 		
-         		 
 		
-		username.setText(user_name1);
-		email.setEditable(false);
-		email.setText(email1);
-		email.setColumns(15);
-		password.setText(password1);
-		password.setEditable(false);
-		password.setColumns(15);
-		username.setEditable(false);
-		username.setColumns(15);
 		
 		regist =new Register_db();
 		setVisible(true);
@@ -95,27 +78,52 @@ public class Profile extends JFrame{
 		pan.add(panel);
 		panel.setLayout(new BorderLayout(0, 0));
 		    
-		JLabel lblWelcomeToChadgame = new JLabel("ChadGame Profile");
+		JLabel lblWelcomeToChadgame = new JLabel("ChadGame History");
 		lblWelcomeToChadgame.setHorizontalAlignment(SwingConstants.CENTER);
 		lblWelcomeToChadgame.setForeground(SystemColor.text);
 		lblWelcomeToChadgame.setFont(new Font("Tahoma", Font.PLAIN, 30));
 		panel.add(lblWelcomeToChadgame);
 		    
 		JPanel panel_1 = new JPanel();
+		panel_1.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
+		panel_1.setBorder(new LineBorder(new Color(0, 0, 0)));
 		panel_1.setLayout(new FlowLayout(FlowLayout.RIGHT, 85, 10));
-		namelab.setAlignmentX(Component.CENTER_ALIGNMENT);
-		panel_1.add(namelab);
-		
-		panel_1.add(username);
-		passlab.setAlignmentX(Component.CENTER_ALIGNMENT);
-		panel_1.add(passlab);
-		
-		panel_1.add(password);
-		emaillab.setHorizontalAlignment(SwingConstants.CENTER);
-		panel_1.add(emaillab);
 		pan.add(panel_1);
 		
-		panel_1.add(email);
+		textField_2 = new JTextField();
+		textField_2.setEditable(false);
+		panel_1.add(textField_2);
+		textField_2.setColumns(15);
+		textField_2.setText(name1);
+		
+		JLabel lblUsername = new JLabel("Username");
+		panel_1.add(lblUsername);
+		
+		textField = new JTextField();
+		textField.setEditable(false);
+		panel_1.add(textField);
+		textField.setColumns(15);
+		textField.setText(wincount1);
+		
+		JLabel lblWincount = new JLabel("Wincount");
+		panel_1.add(lblWincount);
+		
+		textField_1 = new JTextField();
+		textField_1.setEditable(false);
+		panel_1.add(textField_1);
+		textField_1.setColumns(15);
+		textField_1.setText(losecount);
+		
+		JLabel lblLosecount = new JLabel("Losecount");
+		panel_1.add(lblLosecount);
+		
+		table = new JTable();
+		panel_1.add(table);
+		table.setToolTipText("显示所有的数据");  
+	    table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);// 设置表格调整尺寸模式  
+	    table.setCellSelectionEnabled(false);// 设置单元格选择方式  
+	    table.setShowVerticalLines(true);// 设置是否显示单元格间的分割线  
+	    table.setShowHorizontalLines(true);  
 		    
 		JPanel panel_3 = new JPanel();
 		panel_3.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
@@ -138,7 +146,7 @@ public class Profile extends JFrame{
 			}
 	 	public static void main(String []args){
 	     
-		    new Profile();
+		    new History();
 			}
 
 		}

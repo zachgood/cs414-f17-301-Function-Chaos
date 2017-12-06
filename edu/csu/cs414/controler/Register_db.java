@@ -12,11 +12,12 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
-import edu.csu.cs414.model.Register;
+import edu.csu.cs414.view.Register;
+import java.util.UUID;
 
 public class Register_db extends ConnectionMySQL implements ActionListener{
 	
-	JTextField Usertext, passwordtext, emailtext, gendertext, addresstext;
+	JTextField Usertext, passwordtext, emailtext;
 	JButton Sumbit,Reset;
 	Statement stmt;
 	Register re;
@@ -31,12 +32,7 @@ public class Register_db extends ConnectionMySQL implements ActionListener{
     public void setemail(JTextField s){  
     	emailtext = s;  
     } 
-    public void setgender(JTextField g){  
-    	gendertext = g;  
-    } 
-    public void setaddress(JTextField a){  
-    	addresstext = a;  
-    } 
+    
     
     public void setSumbitButton(JButton b1){  
     	Sumbit = b1;  
@@ -49,23 +45,30 @@ public class Register_db extends ConnectionMySQL implements ActionListener{
     	return Usertext.getText();
     }
 	
+     
+     
+     
     public void actionPerformed(ActionEvent e){  
         if(e.getSource() == Sumbit){  
             if(Usertext.getText().equals(""))            //if the username is null   
                 JOptionPane.showMessageDialog(null, "Please input your Username","Warning",JOptionPane.WARNING_MESSAGE);  
             else if(passwordtext.getText().equals(""))  
                 JOptionPane.showMessageDialog(null,"Please input your password","Warning",JOptionPane.WARNING_MESSAGE);  
+            else if(emailtext.getText().equals(""))  
+                JOptionPane.showMessageDialog(null,"Please input your email","Warning",JOptionPane.WARNING_MESSAGE); 
             else{  
-            	int UserID =001;
+            	
+            	int UserID = (int) (Math.random() * 900000) + 100000;
+                
                 String name = Usertext.getText();  
                 String password = passwordtext.getText(); 
                 String email = emailtext.getText();  
-                String gender = gendertext.getText(); 
-                String address = addresstext.getText();  
+//                String gender = gendertext.getText(); 
+//                String address = addresstext.getText();  
                 
                 try {  
                 	ConnectionMySQL();  
-                    writeInSql(UserID, name, password, email, gender, address);  
+                    writeInSql(UserID, name, password, email);  
                 } catch (Exception e1) {  
                     System.out.println("Registeration error");  
                     e1.printStackTrace();  
@@ -75,15 +78,15 @@ public class Register_db extends ConnectionMySQL implements ActionListener{
         else if(e.getSource() == Reset){  
         	Usertext.setText("");  
         	passwordtext.setText("");  
-        	addresstext.setText("");  
+//        	addresstext.setText("");  
         	emailtext.setText("");  
-        	gendertext.setText("");  
+//        	gendertext.setText("");  
         }  
     }
     
    
     
-	private void writeInSql(int UserID, String name, String password, String email, String gender, String address) throws Exception{
+	private void writeInSql(int UserID, String name, String password, String email) throws Exception{
 		// TODO Auto-generated method stub
 		 String sql;  
          
@@ -92,7 +95,7 @@ public class Register_db extends ConnectionMySQL implements ActionListener{
 	        
 	        
 	        //insert data
-	        sql = "insert into profile(UserID,UserName,Password,Email,Gender,Address) values('"+UserID+"','"+name+"','"+password+"','"+email+"','"+gender+"','"+address+"')";  
+	        sql = "insert into player(PlayerID,UserName,Password,Email) values('"+UserID+"','"+name+"','"+password+"','"+email+"')";  
 	        int rw = stmt.executeUpdate(sql);  
 //	        System.out.println(sql);  
 	        if(rw <= 0){             //judgment  

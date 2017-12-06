@@ -1,5 +1,7 @@
 package edu.csu.cs414.controler;
 
+import edu.csu.cs414.view.ChadGameApp;
+
 public class ChadSub {
 
 	public static void main(String[] args) {

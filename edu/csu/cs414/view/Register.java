@@ -1,4 +1,4 @@
-package edu.csu.cs414.model;
+package edu.csu.cs414.view;
 
 
 import java.awt.BorderLayout;
@@ -10,72 +10,30 @@ import java.awt.GridLayout;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.SystemColor;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException ;
-import java.sql.Statement;
-import java.sql.PreparedStatement ;  
-import java.text.SimpleDateFormat ;  
-
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
 
 import edu.csu.cs414.controler.Register_db;  
 
-public class Profile extends JFrame{  
+public class Register extends JFrame{  
 	
 		
 	private JPanel pan = new JPanel();
 	private JLabel namelab = new JLabel("UserName");
 	private JLabel passlab = new JLabel("Password");
 	private JLabel emaillab = new JLabel("email");
+	
+	private JTextField usrnametext = new JTextField();
+	private JPasswordField passtext = new JPasswordField();
 	public JButton Submit = new JButton("Sumbit");
-	public static String user_name1="Martin";
+	public JButton Reset = new JButton("Reset");
+	private final JTextField emailtext = new JTextField();
 	
    	Register_db regist;
-   	private final JTextField username = new JTextField();
-   	private final JTextField password = new JTextField();
-   	private final JTextField email = new JTextField();
+   
    	
    	
-   	static Connection ct = null;  
-    static PreparedStatement ps = null;  
-    static ResultSet rs = null;  
-   	String name1 = user_name1;
-    String password1 = null;
-    String email1 =null;
-    
-    
-	public Profile() {
-		
-		try {
-		      Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/chadgame","root","123456");
-		      System.out.println("Success connect Mysql server!");
-		      Statement stmt = connect.createStatement();
-		      ResultSet rs = stmt.executeQuery("select * from player where UserName=\""+name1+"\"");	
-		      while (rs.next()) {
-		    	  password1 = rs.getString(4);  
-		          email1 = rs.getString(3);  
-		          System.out.println(rs.getString("UserName") + password1);
-		      }
-		}
-		catch (Exception e) {
-		      System.out.print("get data error!");
-		      e.printStackTrace();
-		}
-		
-         		 
-		
-		username.setText(user_name1);
-		email.setEditable(false);
-		email.setText(email1);
-		email.setColumns(15);
-		password.setText(password1);
-		password.setEditable(false);
-		password.setColumns(15);
-		username.setEditable(false);
-		username.setColumns(15);
+	public Register() {
 		
 		regist =new Register_db();
 		setVisible(true);
@@ -95,7 +53,7 @@ public class Profile extends JFrame{
 		pan.add(panel);
 		panel.setLayout(new BorderLayout(0, 0));
 		    
-		JLabel lblWelcomeToChadgame = new JLabel("ChadGame Profile");
+		JLabel lblWelcomeToChadgame = new JLabel("ChadGame RegisterPage");
 		lblWelcomeToChadgame.setHorizontalAlignment(SwingConstants.CENTER);
 		lblWelcomeToChadgame.setForeground(SystemColor.text);
 		lblWelcomeToChadgame.setFont(new Font("Tahoma", Font.PLAIN, 30));
@@ -105,17 +63,19 @@ public class Profile extends JFrame{
 		panel_1.setLayout(new FlowLayout(FlowLayout.RIGHT, 85, 10));
 		namelab.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panel_1.add(namelab);
-		
-		panel_1.add(username);
+		panel_1.add(usrnametext);
+		usrnametext.setColumns(15);
 		passlab.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panel_1.add(passlab);
-		
-		panel_1.add(password);
+		passtext.setColumns(15);
+		panel_1.add(passtext);
 		emaillab.setHorizontalAlignment(SwingConstants.CENTER);
 		panel_1.add(emaillab);
+		emailtext.setColumns(15);
+		    
+		panel_1.add(emailtext);
+		usrnametext.setColumns(15);
 		pan.add(panel_1);
-		
-		panel_1.add(email);
 		    
 		JPanel panel_3 = new JPanel();
 		panel_3.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
@@ -126,10 +86,18 @@ public class Profile extends JFrame{
 		    
 		Submit.setBackground(UIManager.getColor("textHighlight"));
 		panel_2.add(Submit);
+		Reset.setBackground(UIManager.getColor("textHighlight"));
+		panel_2.add(Reset);
 		    
 		    
 		Submit.addActionListener(regist);
-		regist.setSumbitButton(Submit);
+		Reset.addActionListener(regist);
+		
+		regist.setname(usrnametext);  
+		regist.setpassword(passtext); 
+		regist.setemail(emailtext);
+		regist.setSumbitButton(Submit);  
+	    regist.setResetButton(Reset); 
 		    
 	      
 //		    super.add(pan);
@@ -138,7 +106,7 @@ public class Profile extends JFrame{
 			}
 	 	public static void main(String []args){
 	     
-		    new Profile();
+		    new Register();
 			}
 
 		}
